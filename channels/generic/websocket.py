@@ -240,6 +240,19 @@ class AsyncWebsocketConsumer(AsyncConsumer):
         Called when a WebSocket connection is closed. Base level so you don't
         need to call super() all the time.
         """
+        self._close_code = message["code"]
+        raise StopConsumer()
+
+    async def disconnect(self, code):
+        """
+        User Hook to perform cleanup
+        """
+        pass
+
+    async def cleanup(self):
+        """
+        Called when a Websocket Stop (always)
+        """
         try:
             for group in self.groups:
                 await self.channel_layer.group_discard(group, self.channel_name)
@@ -247,15 +260,9 @@ class AsyncWebsocketConsumer(AsyncConsumer):
             raise InvalidChannelLayerError(
                 "BACKEND is unconfigured or doesn't support groups"
             )
-        await self.disconnect(message["code"])
-        await aclose_old_connections()
-        raise StopConsumer()
 
-    async def disconnect(self, code):
-        """
-        Called when a WebSocket connection is closed.
-        """
-        pass
+        await self.disconnect(getattr(self, "_close_code", None))
+        await aclose_old_connections()
 
 
 class AsyncJsonWebsocketConsumer(AsyncWebsocketConsumer):

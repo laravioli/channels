@@ -8,6 +8,10 @@ from .exceptions import StopConsumer
 from .layers import get_channel_layer
 from .utils import await_many_dispatch
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def get_handler_name(message):
     """
@@ -67,6 +71,13 @@ class AsyncConsumer:
             # Do cleanup
             if callable(getattr(self.channel_layer, "clean_channel", None)):
                 await self.channel_layer.clean_channel(self.channel_name)
+            if callable(getattr(self, "cleanup", None)):
+                try:
+                    await self.cleanup()
+                except BaseException:
+                    logger.exception(
+                        "Unexpected exception while cleaning-up WsConsumer"
+                    )
 
     async def dispatch(self, message):
         """
