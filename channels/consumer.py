@@ -63,6 +63,10 @@ class AsyncConsumer:
         except StopConsumer:
             # Exit cleanly
             pass
+        finally:
+            # Do cleanup
+            if callable(getattr(self.channel_layer, "clean_channel", None)):
+                await self.channel_layer.clean_channel(self.channel_name)
 
     async def dispatch(self, message):
         """
